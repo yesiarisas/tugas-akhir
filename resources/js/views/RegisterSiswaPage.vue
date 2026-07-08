@@ -29,25 +29,21 @@ onMounted(() => {
 */
 const register = async () => {
 
-    // 1. Validasi eksistensi No HP dari URL
     if (!form.no_hp) {
         alert('Gagal Aktivasi: No HP tidak terdeteksi dari sistem/URL.')
         return
     }
 
-    // 2. Validasi kelengkapan field
     if (!form.email || !form.password || !form.confirm_password) {
         alert('Semua field wajib diisi!')
         return
     }
 
-    // 3. Validasi batas minimal karakter password (sinkron dengan backend)
     if (form.password.length < 6) {
         alert('Password minimal harus 6 karakter!')
         return
     }
 
-    // 4. Validasi kecocokan konfirmasi password
     if (form.password !== form.confirm_password) {
         alert('Konfirmasi password tidak sama!')
         return
@@ -61,21 +57,18 @@ const register = async () => {
         })
 
         alert(response.data.message)
-        
-        // Langsung arahkan ke halaman login siswa jika berhasil
+
         router.push('/login-siswa')
 
     } catch (error) {
-        console.error('ERROR RESPONS:', error.response?.data)
+        console.error(error)
 
-        // Menampilkan pesan error validasi spesifik dari Laravel jika status 422
         if (error.response?.status === 422 && error.response?.data?.errors) {
             const validationErrors = error.response.data.errors
             const errorMessages = Object.values(validationErrors).flat().join('\n')
             alert(errorMessages)
         } else {
-            // Menampilkan error umum (404 tidak ditemukan / 400 sudah aktivasi)
-            alert(error.response?.data?.message || 'Terjadi kesalahan sistem, silakan coba lagi.')
+            alert(error.response?.data?.message || 'Terjadi kesalahan sistem.')
         }
     }
 }
@@ -86,14 +79,15 @@ const register = async () => {
     <div class="register-card">
         <h1>Aktivasi Akun</h1>
 
-        <form @submit.prevent="register">
+        <form @submit.prevent="register" autocomplete="off">
+
             <div class="form-group">
                 <label>No HP</label>
                 <input
                     type="text"
                     v-model="form.no_hp"
-                    placeholder="No HP pendaftar"
                     readonly
+                    autocomplete="off"
                 >
             </div>
 
@@ -103,6 +97,7 @@ const register = async () => {
                     type="email"
                     v-model="form.email"
                     placeholder="username@gmail.com"
+                    autocomplete="off"
                 >
             </div>
 
@@ -112,6 +107,7 @@ const register = async () => {
                     type="password"
                     v-model="form.password"
                     placeholder="Masukkan password"
+                    autocomplete="new-password"
                 >
             </div>
 
@@ -121,18 +117,21 @@ const register = async () => {
                     type="password"
                     v-model="form.confirm_password"
                     placeholder="Ulangi password"
+                    autocomplete="new-password"
                 >
             </div>
 
             <button type="submit" class="register-btn">
                 Aktivasi Akun
             </button>
+
         </form>
 
         <div class="login-link">
             Sudah punya akun?
-            <router-link to="/login-siswa"> Login disini</router-link>
+            <router-link to="/login-siswa">Login disini</router-link>
         </div>
+
     </div>
 </div>
 </template>

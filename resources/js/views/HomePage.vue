@@ -67,7 +67,7 @@ const goToLogin = () => {
             <a href="#contact">Contact</a>
             <a href="#agenda">Agenda</a>
             <a href="#galeri">Galeri</a>
-            <router-link to="/status-pendaftaran">Cek Status</router-link>
+            <router-link to="/status-pendaftaran">Status</router-link>
             <button class="login-btn" @click="goToLogin">LOGIN</button>
         </div>
 

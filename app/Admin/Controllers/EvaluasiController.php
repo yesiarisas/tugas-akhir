@@ -25,6 +25,11 @@ class EvaluasiController extends AdminController
         return Grid::make(new Anggota(), function (Grid $grid) {
 
             /**
+             * QUICK SEARCH (Fitur Pencarian Cepat - Tetap Dipertahankan)
+             */
+            $grid->quickSearch('nama');
+
+            /**
              * URUT BERDASARKAN UMUR
              * TK -> SD -> SMP -> SMA -> UMUM
              */
@@ -83,38 +88,39 @@ class EvaluasiController extends AdminController
             /**
              * KATEGORI
              */
-           $grid->column('kategori_id', 'Kategori')
-    ->display(function ($id) {
+            $grid->column('kategori_id', 'Kategori')
+                ->display(function ($id) {
 
-        $kategori = KategoriLatihan::find($id);
+                    $kategori = KategoriLatihan::find($id);
 
-        return $kategori
-            ? $kategori->nama_kategori
-            : '-';
-    });
+                    return $kategori
+                        ? $kategori->nama_kategori
+                        : '-';
+                });
+
             /**
              * NILAI TERAKHIR
              */
             $grid->column('rata_rata', 'Rata-rata Terakhir')
-    ->display(function () {
+                ->display(function () {
 
-        $nilai = Evaluasi::where('anggota_id', $this->id)
-            ->latest()
-            ->first();
+                    $nilai = Evaluasi::where('anggota_id', $this->id)
+                        ->latest()
+                        ->first();
 
-        if (!$nilai) {
-            return '-';
-        }
+                    if (!$nilai) {
+                        return '-';
+                    }
 
-        $rata =
-            (
-                $nilai->nilai_teknik +
-                $nilai->nilai_kedisiplinan +
-                $nilai->nilai_kehadiran
-            ) / 3;
+                    $rata =
+                        (
+                            $nilai->nilai_teknik +
+                            $nilai->nilai_kedisiplinan +
+                            $nilai->nilai_kehadiran
+                        ) / 3;
 
-        return round($rata, 1);
-    });
+                    return round($rata, 1);
+                });
 
             /**
              * AKSI
@@ -155,31 +161,17 @@ class EvaluasiController extends AdminController
             });
 
             /**
-             * DISABLE
+             * DISABLE BUTTONS
              */
             $grid->disableCreateButton();
-
             $grid->disableEditButton();
-
             $grid->disableDeleteButton();
-
             $grid->disableViewButton();
 
             /**
-             * FILTER
+             * FILTER TOMBOL DIHAPUS (disableFilter)
              */
-            $grid->filter(function (Grid\Filter $filter) {
-
-                $filter->like('nama', 'Nama');
-
-                $filter->equal('kategori_id', 'Kategori')
-                    ->select(
-                        KategoriLatihan::pluck(
-                            'nama_kategori',
-                            'id'
-                        )
-                    );
-            });
+            $grid->disableFilter();
         });
     }
 
@@ -192,27 +184,38 @@ class EvaluasiController extends AdminController
 
             $form->display('id');
 
-            /**
-             * NAMA
-             */
-            $form->select('anggota_id', 'Nama')
-                ->options(
-                    Anggota::pluck('nama', 'id')
-                )
-                ->default(request('anggota_id'))
-                ->required();
+            // Ambil ID Anggota dari URL parameter (?anggota_id=xx)
+            $anggotaId = request('anggota_id');
 
             /**
-             * KATEGORI
+             * NAMA & KATEGORI OTOMATIS (READ-ONLY)
              */
-            $form->select('kategori_id', 'Kategori')
-                ->options(
-                    KategoriLatihan::pluck(
-                        'nama_kategori',
-                        'id'
-                    )
-                )
-                ->required();
+            if ($anggotaId && $form->isCreating()) {
+                $anggota = Anggota::find($anggotaId);
+                
+                if ($anggota) {
+                    // Tampilkan Nama Anggota sebagai teks (Tidak bisa diedit)
+                    $form->display('anggota_nama', 'Nama')->default($anggota->nama);
+                    $form->hidden('anggota_id')->default($anggota->id);
+
+                    // Ambil Kategori otomatis dari data anggota
+                    $kategori = KategoriLatihan::find($anggota->kategori_id);
+                    $namaKategori = $kategori ? $kategori->nama_kategori : '-';
+                    
+                    // Tampilkan Kategori sebagai teks (Tidak bisa diedit)
+                    $form->display('kategori_nama', 'Kategori')->default($namaKategori);
+                    $form->hidden('kategori_id')->default($anggota->kategori_id);
+                }
+            } else {
+                // Fallback jika form diakses secara manual atau mode edit normal
+                $form->select('anggota_id', 'Nama')
+                    ->options(Anggota::pluck('nama', 'id'))
+                    ->required();
+
+                $form->select('kategori_id', 'Kategori')
+                    ->options(KategoriLatihan::pluck('nama_kategori', 'id'))
+                    ->required();
+            }
 
             /**
              * TANGGAL
@@ -222,24 +225,47 @@ class EvaluasiController extends AdminController
                 ->required();
 
             /**
-             * NILAI
+             * NILAI (Berupa input teks angka langsung tanpa tombol plus minus)
+             * Batasan input tetap minimal 1 dan maksimal 100
              */
             $form->text('nilai_teknik', 'Nilai Teknik')
-            ->required();
+                ->type('number')
+                ->attribute('min', 1)
+                ->attribute('max', 100)
+                ->rules('required|integer|min:1|max:100')
+                ->required();
 
             $form->text('nilai_kedisiplinan', 'Nilai Disiplin')
-            ->required();
+                ->type('number')
+                ->attribute('min', 1)
+                ->attribute('max', 100)
+                ->rules('required|integer|min:1|max:100')
+                ->required();
 
             $form->text('nilai_kehadiran', 'Nilai Kehadiran')
-            ->required();
+                ->type('number')
+                ->attribute('min', 1)
+                ->attribute('max', 100)
+                ->rules('required|integer|min:1|max:100')
+                ->required();
+                
             /**
              * CATATAN
              */
             $form->textarea('catatan', 'Catatan');
 
             $form->display('created_at');
-
             $form->display('updated_at');
+
+            /**
+             * FOOTER CONFIGURATION (Hanya Aktifkan Submit)
+             */
+            $form->footer(function ($footer) {
+                $footer->disableReset();          // Hapus tombol Reset
+                $footer->disableViewCheck();      // Hapus checkbox View
+                $footer->disableEditingCheck();   // Hapus checkbox Continue editing
+                $footer->disableCreatingCheck();  // Hapus checkbox Continue creating
+            });
         });
     }
 
@@ -265,24 +291,17 @@ class EvaluasiController extends AdminController
                      * KOLOM
                      */
                     $grid->column('tanggal_evaluasi', 'Tanggal');
-
                     $grid->column('nilai_teknik', 'Teknik');
-
                     $grid->column('nilai_kedisiplinan', 'Disiplin');
-
                     $grid->column('nilai_kehadiran', 'Kehadiran');
-
                     $grid->column('catatan', 'Catatan');
 
                     /**
-                     * DISABLE
+                     * DISABLE BUTTONS
                      */
                     $grid->disableCreateButton();
-
                     $grid->disableEditButton();
-
                     $grid->disableDeleteButton();
-
                     $grid->disableViewButton();
                 })
             );
@@ -303,11 +322,8 @@ class EvaluasiController extends AdminController
          * ARRAY
          */
         $label = [];
-
         $teknik = [];
-
         $disiplin = [];
-
         $kehadiran = [];
 
         foreach ($evaluasi as $item) {
@@ -322,13 +338,10 @@ class EvaluasiController extends AdminController
              * MINGGU KE BERAPA
              */
             $tanggal = Carbon::parse($item->tanggal_evaluasi);
-
             $minggu = ceil($tanggal->day / 7);
 
             /**
-             * LABEL
-             * contoh:
-             * Mei-M1
+             * LABEL (Contoh: Mei-M1)
              */
             $label[] = $bulan . '-M' . $minggu;
 
@@ -336,9 +349,7 @@ class EvaluasiController extends AdminController
              * DATA
              */
             $teknik[] = (int) $item->nilai_teknik;
-
             $disiplin[] = (int) $item->nilai_kedisiplinan;
-
             $kehadiran[] = (int) $item->nilai_kehadiran;
         }
 
@@ -348,51 +359,41 @@ class EvaluasiController extends AdminController
         $chart = new Chart();
 
         $chart->options([
-
             'chart' => [
                 'type' => 'bar',
                 'height' => 500,
                 'stacked' => false,
             ],
-
             'series' => [
-
                 [
                     'name' => 'Teknik',
                     'data' => $teknik,
                 ],
-
                 [
                     'name' => 'Disiplin',
                     'data' => $disiplin,
                 ],
-
                 [
                     'name' => 'Kehadiran',
                     'data' => $kehadiran,
                 ],
             ],
-
             'xaxis' => [
                 'categories' => $label,
             ],
-
             'yaxis' => [
                 'min' => 0,
                 'max' => 100,
             ],
-
             'legend' => [
                 'position' => 'top',
             ],
-
             'plotOptions' => [
                 'bar' => [
                     'horizontal' => false,
                     'columnWidth' => '60%',
                 ],
             ],
-
             'dataLabels' => [
                 'enabled' => true,
             ],
@@ -403,25 +404,19 @@ class EvaluasiController extends AdminController
             ->description($anggota->nama)
             ->body($chart);
     }
+
     /**
      * DETAIL
      */
     protected function detail($id)
     {
         return Show::make($id, new Evaluasi(), function (Show $show) {
-
             $show->field('anggota.nama', 'Nama');
-
             $show->field('kategori.nama_kategori', 'Kategori');
-
             $show->field('tanggal_evaluasi', 'Tanggal');
-
             $show->field('nilai_teknik', 'Nilai Teknik');
-
             $show->field('nilai_kedisiplinan', 'Nilai Kedisiplinan');
-
             $show->field('nilai_kehadiran', 'Nilai Kehadiran');
-
             $show->field('catatan', 'Catatan');
         });
     }

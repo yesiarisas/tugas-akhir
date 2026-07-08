@@ -13,7 +13,7 @@ use Dcat\Admin\Http\Controllers\AdminController;
 class PendaftarController extends AdminController
 {
     /**
-     * GRID
+     * GRID - HALAMAN DAFTAR UTAMA
      */
     protected function grid()
     {
@@ -29,16 +29,12 @@ class PendaftarController extends AdminController
 
             $grid->column('tanggal_daftar', 'Tanggal Daftar');
 
-            $grid->column('status')
-                ->using([
+            // PERBAIKAN UTAMA: Mengubah kolom status menjadi tombol pilihan inline dropdown
+            $grid->column('status', 'Status')
+                ->select([
                     'menunggu' => 'Menunggu',
                     'diterima' => 'Diterima',
                     'ditolak'  => 'Ditolak',
-                ])
-                ->label([
-                    'menunggu' => 'warning',
-                    'diterima' => 'success',
-                    'ditolak'  => 'danger',
                 ]);
 
             $grid->column('created_at', 'Dibuat');
@@ -46,53 +42,57 @@ class PendaftarController extends AdminController
             $grid->quickSearch('nama_pendaftar', 'no_hp');
 
             $grid->filter(function ($filter) {
-
                 $filter->like('nama_pendaftar', 'Nama');
-
-                $filter->equal('status')
-                    ->select([
-                        'menunggu' => 'Menunggu',
-                        'diterima' => 'Diterima',
-                        'ditolak'  => 'Ditolak',
-                    ]);
+                $filter->equal('status')->select([
+                    'menunggu' => 'Menunggu',
+                    'diterima' => 'Diterima',
+                    'ditolak'  => 'Ditolak',
+                ]);
             });
 
-            // badge notif pending
+            // Sembunyikan tombol Create (Tambah Data) di kanan atas
+            $grid->disableCreateButton();
+
+            // Membatasi menu Aksi (Titik Tiga) agar HANYA menampilkan SHOW saja
+            $grid->actions(function (Grid\Displayers\Actions $actions) {
+                $actions->disableEdit();   // Menghilangkan tombol Edit
+                $actions->disableDelete(); // Menghilangkan tombol Delete
+            });
+
             $grid->model()->orderBy('id', 'desc');
         });
     }
 
     /**
-     * DETAIL
+     * DETAIL - HALAMAN LIHAT DATA (SHOW)
      */
     protected function detail($id)
     {
         return Show::make($id, new Pendaftar(), function (Show $show) {
+            
+            // Sembunyikan tombol Edit & Delete di dalam halaman detail data
+            $show->panel()->tools(function (Show\Tools $tools) {
+                $tools->disableEdit();
+                $tools->disableDelete();
+            });
 
             $show->field('id');
-
             $show->field('nama_pendaftar', 'Nama');
-
             $show->field('tanggal_lahir', 'Tanggal Lahir');
-
             $show->field('no_hp', 'No HP');
-
             $show->field('alamat', 'Alamat');
-
             $show->field('tanggal_daftar', 'Tanggal Daftar');
-
             $show->field('status', 'Status');
-
             $show->field('catatan_admin', 'Catatan Admin');
-
             $show->field('created_at', 'Dibuat');
-
             $show->field('updated_at', 'Diupdate');
         });
     }
 
     /**
-     * FORM
+     * FORM - JANGAN DIHAPUS
+     * Dcat Admin memerlukan blueprint di method form() ini 
+     * untuk memproses update data saat Anda mengubah pilihan status di halaman Grid.
      */
     protected function form()
     {
@@ -150,69 +150,27 @@ class PendaftarController extends AdminController
 
             /*
             |--------------------------------------------------------------------------
-            | AUTO INSERT KE ANGGOTA
+            | AUTO INSERT KE ANGGOTA SAAT STATUS "DITERIMA"
             |--------------------------------------------------------------------------
             */
-
             $form->saved(function (Form $form) {
-
                 $pendaftar = $form->model();
 
-                /*
-                |--------------------------------------------------------------------------
-                | JIKA STATUS DITERIMA
-                |--------------------------------------------------------------------------
-                */
-
                 if ($pendaftar->status === 'diterima') {
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | CEK SUDAH ADA BELUM
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $anggota = Anggota::where(
-                        'no_hp',
-                        $pendaftar->no_hp
-                    )->first();
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | JIKA BELUM ADA
-                    |--------------------------------------------------------------------------
-                    */
+                    $anggota = Anggota::where('no_hp', $pendaftar->no_hp)->first();
 
                     if (!$anggota) {
-
                         Anggota::create([
-
-                            'kategori_id' => $pendaftar->kategori_id,
-
-                            'nama' => $pendaftar->nama_pendaftar,
-
-                            'tanggal_lahir' => $pendaftar->tanggal_lahir,
-
-                            'no_hp' => $pendaftar->no_hp,
-
-                            'alamat' => $pendaftar->alamat,
-
+                            'kategori_id'    => $pendaftar->kategori_id,
+                            'nama'           => $pendaftar->nama_pendaftar,
+                            'tanggal_lahir'  => $pendaftar->tanggal_lahir,
+                            'no_hp'          => $pendaftar->no_hp,
+                            'alamat'         => $pendaftar->alamat,
                             'tanggal_gabung' => now(),
-
-                            // LOGIN SYSTEM
-                            'kode_anggota' => 'AGT-' . str_pad(
-                                $pendaftar->id,
-                                5,
-                                '0',
-                                STR_PAD_LEFT
-                            ),
-
-                            'email' => null,
-
-                            'password' => null,
-
+                            'kode_anggota'   => 'AGT-' . str_pad($pendaftar->id, 5, '0', STR_PAD_LEFT),
+                            'email'          => null,
+                            'password'       => null,
                             'sudah_aktivasi' => false,
-
                         ]);
                     }
                 }
