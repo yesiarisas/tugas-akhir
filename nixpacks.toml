@@ -243,7 +243,7 @@ nixPkgs = [
     '(php80.withExtensions (pe: pe.enabled ++ []))',
     'nginx',
     'libmysqlclient',
-    'php80Packages.composer',
+    'php81Packages.composer',
     'nodejs_18',
     'npm-9_x',
 ]
