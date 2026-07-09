@@ -21,8 +21,13 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+     public function boot()
     {
-        //
+        if (config('app.env') === 'production' || env('APP_URL') !== 'http://localhost') {
+            URL::forceScheme('https');
+
+            // Mengambil base URL langsung dari APP_URL di .env Anda
+            URL::forceRootUrl(config('app.url'));
+        }
     }
 }
