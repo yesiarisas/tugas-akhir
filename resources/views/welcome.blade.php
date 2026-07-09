@@ -8,8 +8,7 @@
 
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 
-       <script type="module" src="http://localhost:5173/resources/js/app.js"></script>
-       <script type="module" src="http://localhost:5173/resources/css/app.css"></script>
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <style>
             body {
