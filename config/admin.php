@@ -29,7 +29,7 @@ return [
         height:60px;
     ">
         <img 
-            src="/storage/images/logo-langlang.jpg"
+            src="data:image/jpeg;base64,' . (file_exists(base_path('logo-langlang.jpg')) ? base64_encode(file_get_contents(base_path('logo-langlang.jpg'))) : '') . '"
             width="42"
             height="42"
             style="
@@ -63,7 +63,7 @@ return [
     */
     'logo-mini' => '
     <img 
-        src="/storage/images/logo-langlang.jpg"
+        src="data:image/jpeg;base64,' . (file_exists(base_path('logo-langlang.jpg')) ? base64_encode(file_get_contents(base_path('logo-langlang.jpg'))) : '') . '"
         width="35"
         height="35"
         style="
@@ -133,7 +133,7 @@ return [
     | Assets hostname
     |--------------------------------------------------------------------------
     |
-   */
+    */
     'assets_server' => env('ADMIN_ASSETS_SERVER'),
 
     /*
@@ -195,6 +195,7 @@ return [
     |--------------------------------------------------------------------------
     | The global Grid setting
     |--------------------------------------------------------------------------
+    |
     */
     'grid' => [
 
@@ -228,6 +229,7 @@ return [
     |--------------------------------------------------------------------------
     | dcat-admin helpers setting.
     |--------------------------------------------------------------------------
+    |
     */
     'helpers' => [
         'enable' => true,

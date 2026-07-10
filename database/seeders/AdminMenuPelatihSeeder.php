@@ -108,6 +108,13 @@ class AdminMenuPelatihSeeder extends Seeder
             ['role_id' => 2, 'menu_id' => 24, 'created_at' => '2026-05-20 16:16:09', 'updated_at' => '2026-05-20 16:16:09']
         ]);
 
+
+        DB::table('admin_menu')->where('id', 1)->update([
+            'title'      => 'Dashboard',
+            'icon'       => 'feather icon-home', // Sesuaikan icon kesukaan Anda
+            'updated_at' => now()
+        ]);
+
         Schema::enableForeignKeyConstraints();
     }
 }
