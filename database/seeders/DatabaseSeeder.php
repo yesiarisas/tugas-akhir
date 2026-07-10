@@ -13,6 +13,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // \App\Models\User::factory(10)->create();
+        // Memanggil semua seeder secara berurutan
+        $this->call([
+            AdminTablesSeeder::class,
+            AdminMenuPelatihSeeder::class,
+        ]);
     }
 }
