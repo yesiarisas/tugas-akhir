@@ -138,7 +138,10 @@ if (process.argv.length != 4) {
 await Promise.all([
     isLaravel() ? checkEnvErrors('/app') : Promise.resolve(),
     access('/app/storage', constants.R_OK)
-        .then(() => e('chmod -R ugo+rw /app/storage'))
+        .then(() => {
+            e('chmod -R ugo+rw /app/storage');
+            e('php artisan storage:link --force');
+        })
         .catch(() => {}),
     compileTemplate(process.argv[2], process.argv[3])
 ]).catch(err => prestartLogger.error(err));
